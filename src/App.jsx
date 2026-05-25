@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Lexer } from './compiler/Lexer';
 import { Parser } from './compiler/Parser';
+import { SemanticAnalyzer } from './compiler/SemanticAnalyzer';
 import { Interpreter } from './compiler/Interpreter';
 
 const defaultCode = `// Prueba funcional en Ñ-Junior
@@ -69,6 +70,16 @@ function App() {
     // Check syntax errors
     if (parserResult.errors.length > 0) {
       setOutput(parserResult.errors.map(e => `Error Sintactico: ${e}`));
+      return;
+    }
+
+    // 2.5 Semantic Analysis (Type Checking)
+    const semanticAnalyzer = new SemanticAnalyzer();
+    const semanticErrors = semanticAnalyzer.analyze(parserResult.ast);
+    
+    // Check semantic errors
+    if (semanticErrors.length > 0) {
+      setOutput(semanticErrors.map(e => `Error Semantico: ${e}`));
       return;
     }
 

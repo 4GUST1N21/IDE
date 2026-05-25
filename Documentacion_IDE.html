@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario: Mini IDE Ñ-Junior</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #16a085;
+        }
+        p, ul {
+            margin-bottom: 15px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        code {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #d63384;
+        }
+        .header-box {
+            background-color: #f4f6f7;
+            padding: 20px;
+            border-left: 5px solid #3498db;
+            margin-bottom: 30px;
+        }
+        @media print {
+            body {
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header-box">
+        <h1>Manual de Usuario: Mini IDE Ñ-Junior</h1>
+        <p><strong>Materia:</strong> Teoría de la Computación</p>
+    </div>
+
+    <h2>Introducción</h2>
+    <p>El <strong>Mini IDE Ñ-Junior</strong> es un entorno de desarrollo web interactivo creado para facilitar la programación, compilación y ejecución de código escrito en el lenguaje diseñado para la asignatura. Su propósito principal es evidenciar de manera gráfica las fases fundamentales de un compilador.</p>
+
+    <h2>Partes del IDE</h2>
+    <p>El entorno cuenta con una interfaz moderna dividida en cuatro paneles principales que reflejan el ciclo de vida del código:</p>
+
+    <h3>1. Editor de Código (Izquierda)</h3>
+    <p>Es el área de texto donde el programador escribe el código fuente en lenguaje Ñ-Junior.</p>
+    <ul>
+        <li>Cuenta con <strong>numeración de líneas</strong> sincronizada para ayudar a localizar errores rápidamente.</li>
+        <li>Admite toda la sintaxis del lenguaje, incluyendo creación de clases (<code>cl</code>), herencia (<code>her</code>), funciones (<code>func</code>), y tipos de variables (<code>ent</code>, <code>dec</code>, <code>tex</code>, <code>bol</code>).</li>
+    </ul>
+
+    <h3>2. Analizador Léxico - Tabla de Tokens (Arriba a la Derecha)</h3>
+    <p>Este panel representa la primera fase del compilador. Muestra en tiempo real cómo el autómata del lenguaje fragmenta el texto del editor en piezas más pequeñas llamadas "Tokens".</p>
+    <ul>
+        <li>Muestra el <strong>Tipo</strong> de token (Palabra Reservada, Identificador, Número, Operador, etc.).</li>
+        <li>Muestra el <strong>Lexema</strong> exacto que fue capturado.</li>
+        <li>Ignora de forma inteligente los comentarios de línea (<code>//</code>) y de bloque (<code>«</code> <code>»</code>).</li>
+    </ul>
+
+    <h3>3. Analizador Sintáctico - AST (Medio a la Derecha)</h3>
+    <p>Este panel evidencia la segunda fase del compilador. Toma los tokens y aplica la gramática del lenguaje para construir un <strong>Árbol de Sintaxis Abstracta (AST)</strong> en formato JSON.</p>
+    <ul>
+        <li>Representa la estructura jerárquica del código.</li>
+        <li>Permite ver cómo una instrucción como <code>imp 50 * 2</code> se divide en un nodo de impresión que contiene un nodo de expresión matemática binaria.</li>
+    </ul>
+
+    <h3>4. Consola de Salida (Abajo a la Derecha)</h3>
+    <p>Actúa como un intérprete que evalúa el árbol AST generado.</p>
+    <ul>
+        <li>Muestra los resultados de las funciones de impresión (<code>imp</code>).</li>
+        <li>En caso de haber un error en el código (por ejemplo, faltó un punto y coma, o hay un símbolo no reconocido), el proceso se detiene y la consola imprime un texto en rojo indicando el tipo de error (Léxico o Sintáctico) junto a la <strong>línea y columna</strong> exactas del fallo.</li>
+    </ul>
+
+    <h2>Flujo de Trabajo (Cómo compilar)</h2>
+    <ul>
+        <li><strong>Paso 1 (Escribir):</strong> El usuario redacta su programa en el panel izquierdo.</li>
+        <li><strong>Paso 2 (Ejecución):</strong> Al presionar el botón azul <code>▶ Compilar y Ejecutar</code> en la barra superior, el motor procesará internamente el código.</li>
+        <li><strong>Paso 3 (Visualización):</strong> El usuario podrá observar instantáneamente la tabla de tokens generada, el árbol sintáctico estructurado y, de no haber errores, el output final en la consola.</li>
+    </ul>
+
+    <div class="no-print" style="margin-top: 50px; text-align: center;">
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; background-color: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">Guardar como PDF</button>
+    </div>
+</body>
+</html>
