@@ -115,7 +115,7 @@ function App() {
       <header className="header">
         <h1>Ñ-Junior IDE</h1>
         <div>
-          <button className="run-btn" onClick={handleCompile} style={{ marginRight: '10px' }}>
+          <button className="run-btn" onClick={handleCompile} style={{ marginRight: '0.5cm' }}>
             ⚙️ Compilar
           </button>
           <button className="run-btn" onClick={handleExecute} disabled={!isCompiled} style={{ opacity: isCompiled ? 1 : 0.5, cursor: isCompiled ? 'pointer' : 'not-allowed', backgroundColor: '#27ae60' }}>
