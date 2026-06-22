@@ -37,6 +37,7 @@ function App() {
   const [ast, setAst] = useState(null);
   const [output, setOutput] = useState([]);
   const [parseErrors, setParseErrors] = useState([]);
+  const [isCompiled, setIsCompiled] = useState(false);
 
   const textareaRef = useRef(null);
   const lineNumbersRef = useRef(null);
@@ -47,7 +48,9 @@ function App() {
     }
   };
 
-  const handleRun = () => {
+  const handleCompile = () => {
+    setIsCompiled(false);
+    setOutput([]);
     // 1. Lexical Analysis
     const lexer = new Lexer(code);
     const generatedTokens = lexer.tokenize();
@@ -83,10 +86,16 @@ function App() {
       return;
     }
 
+    setIsCompiled(true);
+    setOutput([`Compilacion exitosa. 0 errores detectados. Listo para ejecutar.`]);
+  };
+
+  const handleExecute = () => {
+    if (!ast) return;
     // 3. Execution (Interpretation)
     try {
       const interpreter = new Interpreter();
-      const result = interpreter.evaluate(parserResult.ast);
+      const result = interpreter.evaluate(ast);
       setOutput(result);
     } catch (e) {
       setOutput([`Error de Ejecucion: ${e.message}`]);
@@ -95,7 +104,7 @@ function App() {
 
   // Run once on load to show initial state
   useEffect(() => {
-    handleRun();
+    handleCompile();
   }, []);
 
   const lineCount = code.split('\n').length;
@@ -105,9 +114,14 @@ function App() {
     <div className="ide-container">
       <header className="header">
         <h1>Ñ-Junior IDE</h1>
-        <button className="run-btn" onClick={handleRun}>
-          ▶ Compilar y Ejecutar
-        </button>
+        <div>
+          <button className="run-btn" onClick={handleCompile} style={{ marginRight: '10px' }}>
+            ⚙️ Compilar
+          </button>
+          <button className="run-btn" onClick={handleExecute} disabled={!isCompiled} style={{ opacity: isCompiled ? 1 : 0.5, cursor: isCompiled ? 'pointer' : 'not-allowed', backgroundColor: '#27ae60' }}>
+            ▶ Ejecutar
+          </button>
+        </div>
       </header>
 
       <main className="main-content">
