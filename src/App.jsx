@@ -102,6 +102,31 @@ function App() {
     }
   };
 
+  const handleExport = () => {
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'codigo.njr';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      setCode(evt.target.result);
+      setIsCompiled(false);
+      setOutput([]);
+      setAst(null);
+      setTokens([]);
+    };
+    reader.readAsText(file);
+    e.target.value = null;
+  };
+
   // Run once on load to show initial state
   useEffect(() => {
     handleCompile();
@@ -127,8 +152,17 @@ function App() {
       <main className="main-content">
         {/* Panel Izquierdo: Editor */}
         <div className="panel grid-left">
-          <div className="panel-header">
+          <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>Editor (codigo.njr)</span>
+            <div>
+              <label className="run-btn" style={{ padding: '4px 8px', fontSize: '12px', marginRight: '5px', cursor: 'pointer', backgroundColor: '#3498db' }}>
+                📂 Importar
+                <input type="file" accept=".njr,.txt" onChange={handleImport} style={{ display: 'none' }} />
+              </label>
+              <button className="run-btn" onClick={handleExport} style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: '#3498db' }}>
+                💾 Exportar
+              </button>
+            </div>
           </div>
           <div className="panel-content" style={{ display: 'flex', flexDirection: 'row', padding: 0, overflow: 'hidden' }}>
             <div 
