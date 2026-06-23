@@ -18,7 +18,7 @@ const KEYWORDS = new Set([
   'intentar', 'capturar', 'lanzar', 'finalmente', 'her'
 ]);
 
-const SYMBOLS = new Set(['{', '}', '(', ')', ';', ',', '.']);
+const SYMBOLS = new Set(['{', '}', '(', ')', '[', ']', ';', ',', '.']);
 const OPERATORS = new Set(['+', '-', '*', '/', '%', '=', '==', '<', '>', '<=', '>=', '!=', '++', '--']);
 
 export class Lexer {
