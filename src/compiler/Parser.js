@@ -92,13 +92,26 @@ export class Parser {
       this.consume(TokenType.SYMBOL, ';', 'Se esperaba ";" despues del valor de retorno');
       return { type: 'ReturnStatement', argument: expr };
     }
+    // Revisar si empieza con un tipo de dato nativo (ent, dec, tex, bol)
+    if (this.match(TokenType.KEYWORD, 'ent') || this.match(TokenType.KEYWORD, 'dec') || 
+        this.match(TokenType.KEYWORD, 'tex') || this.match(TokenType.KEYWORD, 'bol')) {
+      const typeName = this.previous().lexeme;
+      const varName = this.consume(TokenType.IDENTIFIER, 'Se esperaba el nombre de la variable').lexeme;
+      let init = null;
+      if (this.match(TokenType.OPERATOR, '=')) {
+        init = this.parseExpression();
+      }
+      this.consume(TokenType.SYMBOL, ';', 'Se esperaba ";" despues de declaracion');
+      return { type: 'VariableDeclaration', dataType: typeName, name: varName, init };
+    }
+
     // Variable declaration/instantiation or expression statement
     const expr = this.parseExpression();
     if (this.match(TokenType.SYMBOL, ';')) {
       return { type: 'ExpressionStatement', expression: expr };
     } else if (this.match(TokenType.IDENTIFIER)) {
       // e.g., Vehiculo miAuto = nv Vehiculo();
-      // Current token was the type (e.g. Vehiculo). Wait, parseExpression would have parsed it as an Identifier.
+      // expr parsed it as an Identifier
       if (expr.type === 'Identifier') {
         const typeName = expr.name;
         const varName = this.previous().lexeme;
