@@ -1,0 +1,117 @@
+package src;
+import java_cup.runtime.*;
+
+parser code {:
+    // Manejo de errores
+    public void syntax_error(Symbol s) {
+        System.out.println("Error sintáctico en la línea " + (s.left + 1) + 
+                           " columna " + s.right + ". Texto: " + s.value);
+    }
+:}
+
+/* Terminales */
+terminal CL, FUNC, NV, RET, IMP, VAC, Y, O, NO;
+terminal BOL, V, F, ENT, DEC, TEX;
+terminal SI, SINO, MIENTRAS, PARA, ROMPER, CONTINUAR;
+terminal LLAVE_A, LLAVE_C, PAR_A, PAR_C, CORCH_A, CORCH_C, PUNTO_Y_COMA, COMA, PUNTO;
+terminal SUMA, RESTA, MULT, DIV, MOD, ASIG, IGUAL, DISTINTO, MENOR, MAYOR, MENOR_IGUAL, MAYOR_IGUAL;
+terminal String IDENTIFICADOR, CADENA, NUMERO;
+
+/* No Terminales */
+non terminal program, class_decl, class_body, class_member;
+non terminal method_decl, attr_decl, param_list, param_decl;
+non terminal block, stmt_list, stmt;
+non terminal if_stmt, while_stmt, for_stmt, print_stmt, return_stmt, var_decl, expr_stmt;
+non terminal expr, assignment, logic_or, logic_and, equality, relational;
+non terminal additive, multiplicative, unary, primary;
+non terminal arg_list;
+
+precedence right ASIG;
+precedence left O;
+precedence left Y;
+precedence left IGUAL, DISTINTO;
+precedence left MENOR, MAYOR, MENOR_IGUAL, MAYOR_IGUAL;
+precedence left SUMA, RESTA;
+precedence left MULT, DIV, MOD;
+precedence right NO;
+
+start with program;
+
+program ::= class_decl | program class_decl ;
+
+class_decl ::= CL IDENTIFICADOR LLAVE_A class_body LLAVE_C ;
+
+class_body ::= class_member | class_body class_member | /* empty */ ;
+
+class_member ::= method_decl | attr_decl ;
+
+attr_decl ::= IDENTIFICADOR IDENTIFICADOR ASIG expr PUNTO_Y_COMA
+            | IDENTIFICADOR IDENTIFICADOR PUNTO_Y_COMA ;
+
+method_decl ::= FUNC IDENTIFICADOR IDENTIFICADOR PAR_A param_list PAR_C block 
+              | FUNC IDENTIFICADOR IDENTIFICADOR PAR_A PAR_C block ;
+
+param_list ::= param_decl | param_list COMA param_decl ;
+
+param_decl ::= IDENTIFICADOR IDENTIFICADOR ;
+
+block ::= LLAVE_A stmt_list LLAVE_C ;
+
+stmt_list ::= stmt | stmt_list stmt | /* empty */ ;
+
+stmt ::= var_decl | if_stmt | while_stmt | for_stmt | print_stmt | return_stmt | expr_stmt ;
+
+var_decl ::= IDENTIFICADOR IDENTIFICADOR ASIG expr PUNTO_Y_COMA
+           | IDENTIFICADOR IDENTIFICADOR PUNTO_Y_COMA ;
+
+if_stmt ::= SI PAR_A expr PAR_C block
+          | SI PAR_A expr PAR_C block SINO block ;
+
+while_stmt ::= MIENTRAS PAR_A expr PAR_C block ;
+
+for_stmt ::= PARA PAR_A var_decl expr PUNTO_Y_COMA expr PAR_C block 
+           | PARA PAR_A expr_stmt expr PUNTO_Y_COMA expr PAR_C block ;
+
+print_stmt ::= IMP expr PUNTO_Y_COMA ;
+
+return_stmt ::= RET expr PUNTO_Y_COMA ;
+
+expr_stmt ::= expr PUNTO_Y_COMA ;
+
+expr ::= assignment ;
+
+assignment ::= primary ASIG expr | logic_or ;
+
+logic_or ::= logic_or O logic_and | logic_and ;
+
+logic_and ::= logic_and Y equality | equality ;
+
+equality ::= equality IGUAL relational
+           | equality DISTINTO relational
+           | relational ;
+
+relational ::= relational MENOR additive
+             | relational MAYOR additive
+             | relational MENOR_IGUAL additive
+             | relational MAYOR_IGUAL additive
+             | additive ;
+
+additive ::= additive SUMA multiplicative
+           | additive RESTA multiplicative
+           | multiplicative ;
+
+multiplicative ::= multiplicative MULT unary
+                 | multiplicative DIV unary
+                 | multiplicative MOD unary
+                 | unary ;
+
+unary ::= NO unary | primary | NV IDENTIFICADOR CORCH_A expr CORCH_C | NV IDENTIFICADOR PAR_A arg_list PAR_C | NV IDENTIFICADOR PAR_A PAR_C ;
+
+primary ::= NUMERO | CADENA | V | F | IDENTIFICADOR
+          | primary PUNTO IDENTIFICADOR
+          | primary CORCH_A expr CORCH_C
+          | primary PAR_A arg_list PAR_C
+          | primary PAR_A PAR_C
+          | PAR_A expr PAR_C ;
+
+arg_list ::= expr | arg_list COMA expr ;
