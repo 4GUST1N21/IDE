@@ -48,6 +48,26 @@ export class SemanticAnalyzer {
       case 'PrintStatement':
         this.visit(node.argument);
         break;
+      case 'IfStatement':
+        const ifTest = this.visit(node.test);
+        this.checkTypeCompatibility('bol', ifTest, 'Condicion de si');
+        node.consequent.forEach(stmt => this.visit(stmt));
+        if (node.alternate) node.alternate.forEach(stmt => this.visit(stmt));
+        break;
+      case 'WhileStatement':
+        const whileTest = this.visit(node.test);
+        this.checkTypeCompatibility('bol', whileTest, 'Condicion de mientras');
+        node.body.forEach(stmt => this.visit(stmt));
+        break;
+      case 'ForStatement':
+        if (node.init) this.visit(node.init);
+        if (node.test) {
+           const forTest = this.visit(node.test);
+           this.checkTypeCompatibility('bol', forTest, 'Condicion de para');
+        }
+        if (node.update) this.visit(node.update);
+        node.body.forEach(stmt => this.visit(stmt));
+        break;
       case 'ReturnStatement':
         return this.visit(node.argument);
       case 'AssignmentExpression':
@@ -58,13 +78,20 @@ export class SemanticAnalyzer {
             this.checkTypeCompatibility(this.symbolTable[varName], rightType, varName);
           }
         } else if (node.left.type === 'MemberExpression') {
-           // Simplificación: no validamos tipos de atributos de clases en este analizador básico
-           this.visit(node.right);
+           const rightType = this.visit(node.right);
+           if (node.left.computed) {
+             const indexType = this.visit(node.left.property);
+             this.checkTypeCompatibility('ent', indexType, 'Indice de arreglo');
+           }
         }
         break;
       case 'BinaryExpression':
         const leftType = this.visit(node.left);
         const rightType = this.visit(node.right);
+        
+        if (['>', '<', '>=', '<=', '==', '!='].includes(node.operator)) {
+            return 'bol';
+        }
         
         // Si hay un texto de por medio, el resultado es concatenación (texto)
         if (node.operator === '+' && (leftType === 'tex' || rightType === 'tex')) {
@@ -85,8 +112,16 @@ export class SemanticAnalyzer {
         return 'unknown';
       case 'Identifier':
         return this.symbolTable[node.name] || 'unknown';
+      case 'MemberExpression':
+        if (node.computed) {
+           const indexType = this.visit(node.property);
+           this.checkTypeCompatibility('ent', indexType, 'Indice de arreglo');
+        }
+        return 'ent'; // Simplificación: asumimos que el arreglo contiene enteros para burbuja
       case 'NewExpression':
         return node.callee; 
+      case 'ArrayInstantiation':
+        return node.elementsType;
       case 'CallExpression':
         return 'unknown'; // Retorno simplificado para métodos
     }

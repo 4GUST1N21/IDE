@@ -83,9 +83,10 @@ export class Parser {
   }
 
   parseStatement() {
-    if (this.match(TokenType.KEYWORD, 'imp')) {
-      return this.parsePrintStatement();
-    }
+    if (this.match(TokenType.KEYWORD, 'si')) return this.parseIfStatement();
+    if (this.match(TokenType.KEYWORD, 'mientras')) return this.parseWhileStatement();
+    if (this.match(TokenType.KEYWORD, 'para')) return this.parseForStatement();
+    if (this.match(TokenType.KEYWORD, 'imp')) return this.parsePrintStatement();
     if (this.match(TokenType.KEYWORD, 'ret')) {
       const expr = this.parseExpression();
       this.consume(TokenType.SYMBOL, ';', 'Se esperaba ";" despues del valor de retorno');
@@ -111,6 +112,69 @@ export class Parser {
     }
     this.consume(TokenType.SYMBOL, ';', 'Se esperaba ";" despues de la expresion');
     return { type: 'ExpressionStatement', expression: expr };
+  }
+
+  parseIfStatement() {
+    this.consume(TokenType.SYMBOL, '(', 'Se esperaba "(" despues de "si"');
+    const condition = this.parseExpression();
+    this.consume(TokenType.SYMBOL, ')', 'Se esperaba ")" despues de la condicion');
+    this.consume(TokenType.SYMBOL, '{', 'Se esperaba "{" antes del bloque "si"');
+    const consequent = [];
+    while (!this.check(TokenType.SYMBOL, '}') && !this.isAtEnd()) {
+      consequent.push(this.parseStatement());
+    }
+    this.consume(TokenType.SYMBOL, '}', 'Se esperaba "}" despues del bloque "si"');
+    
+    let alternate = null;
+    if (this.match(TokenType.KEYWORD, 'sino')) {
+      this.consume(TokenType.SYMBOL, '{', 'Se esperaba "{" antes del bloque "sino"');
+      alternate = [];
+      while (!this.check(TokenType.SYMBOL, '}') && !this.isAtEnd()) {
+        alternate.push(this.parseStatement());
+      }
+      this.consume(TokenType.SYMBOL, '}', 'Se esperaba "}" despues del bloque "sino"');
+    }
+    return { type: 'IfStatement', test: condition, consequent, alternate };
+  }
+
+  parseWhileStatement() {
+    this.consume(TokenType.SYMBOL, '(', 'Se esperaba "(" despues de "mientras"');
+    const condition = this.parseExpression();
+    this.consume(TokenType.SYMBOL, ')', 'Se esperaba ")" despues de la condicion');
+    this.consume(TokenType.SYMBOL, '{', 'Se esperaba "{" antes del bloque "mientras"');
+    const body = [];
+    while (!this.check(TokenType.SYMBOL, '}') && !this.isAtEnd()) {
+      body.push(this.parseStatement());
+    }
+    this.consume(TokenType.SYMBOL, '}', 'Se esperaba "}" despues del bloque "mientras"');
+    return { type: 'WhileStatement', test: condition, body };
+  }
+
+  parseForStatement() {
+    this.consume(TokenType.SYMBOL, '(', 'Se esperaba "(" despues de "para"');
+    let init = null;
+    if (!this.check(TokenType.SYMBOL, ';')) {
+       init = this.parseStatement(); 
+    } else {
+       this.advance();
+    }
+    let test = null;
+    if (!this.check(TokenType.SYMBOL, ';')) {
+       test = this.parseExpression();
+    }
+    this.consume(TokenType.SYMBOL, ';', 'Se esperaba ";" despues de la condicion del para');
+    let update = null;
+    if (!this.check(TokenType.SYMBOL, ')')) {
+       update = this.parseExpression();
+    }
+    this.consume(TokenType.SYMBOL, ')', 'Se esperaba ")" despues del incremento del para');
+    this.consume(TokenType.SYMBOL, '{', 'Se esperaba "{" antes del bloque "para"');
+    const body = [];
+    while (!this.check(TokenType.SYMBOL, '}') && !this.isAtEnd()) {
+      body.push(this.parseStatement());
+    }
+    this.consume(TokenType.SYMBOL, '}', 'Se esperaba "}" despues del bloque "para"');
+    return { type: 'ForStatement', init, test, update, body };
   }
 
   parsePrintStatement() {
@@ -167,10 +231,15 @@ export class Parser {
 
   parseUnary() {
     if (this.match(TokenType.KEYWORD, 'nv')) {
-      const className = this.consume(TokenType.IDENTIFIER, 'Se esperaba el nombre de la clase tras "nv"').lexeme;
+      const typeName = this.advance().lexeme;
+      if (this.match(TokenType.SYMBOL, '[')) {
+         const size = this.parseExpression();
+         this.consume(TokenType.SYMBOL, ']', 'Se esperaba "]"');
+         return { type: 'ArrayInstantiation', elementsType: typeName, size };
+      }
       this.consume(TokenType.SYMBOL, '(', 'Se esperaba "("');
       this.consume(TokenType.SYMBOL, ')', 'Se esperaba ")"');
-      return { type: 'NewExpression', callee: className };
+      return { type: 'NewExpression', callee: typeName };
     }
     return this.parsePrimary();
   }
@@ -180,20 +249,26 @@ export class Parser {
     if (this.match(TokenType.STRING)) return { type: 'Literal', value: this.previous().lexeme, raw: `"${this.previous().lexeme}"` };
     if (this.match(TokenType.IDENTIFIER)) {
       let expr = { type: 'Identifier', name: this.previous().lexeme };
-      // Check for method call or property access (e.g., miAuto.configurar(..))
-      while (this.match(TokenType.SYMBOL, '.')) {
-        const property = this.consume(TokenType.IDENTIFIER, 'Se esperaba nombre de propiedad/metodo').lexeme;
-        expr = { type: 'MemberExpression', object: expr, property };
-      }
-      if (this.match(TokenType.SYMBOL, '(')) {
-        const args = [];
-        if (!this.check(TokenType.SYMBOL, ')')) {
-          do {
-            args.push(this.parseExpression());
-          } while (this.match(TokenType.SYMBOL, ','));
+      while (true) {
+        if (this.match(TokenType.SYMBOL, '.')) {
+          const property = this.consume(TokenType.IDENTIFIER, 'Se esperaba nombre de propiedad/metodo').lexeme;
+          expr = { type: 'MemberExpression', object: expr, property, computed: false };
+        } else if (this.match(TokenType.SYMBOL, '[')) {
+          const property = this.parseExpression();
+          this.consume(TokenType.SYMBOL, ']', 'Se esperaba "]" despues del indice del arreglo');
+          expr = { type: 'MemberExpression', object: expr, property, computed: true };
+        } else if (this.match(TokenType.SYMBOL, '(')) {
+          const args = [];
+          if (!this.check(TokenType.SYMBOL, ')')) {
+            do {
+              args.push(this.parseExpression());
+            } while (this.match(TokenType.SYMBOL, ','));
+          }
+          this.consume(TokenType.SYMBOL, ')', 'Se esperaba ")"');
+          expr = { type: 'CallExpression', callee: expr, arguments: args };
+        } else {
+          break;
         }
-        this.consume(TokenType.SYMBOL, ')', 'Se esperaba ")"');
-        expr = { type: 'CallExpression', callee: expr, arguments: args };
       }
       return expr;
     }

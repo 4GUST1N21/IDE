@@ -35,23 +35,58 @@ export class Interpreter {
         break;
       case 'PrintStatement':
         const val = this.visit(node.argument);
-        this.output.push(val);
+        if (Array.isArray(val)) {
+           this.output.push('[' + val.join(', ') + ']');
+        } else {
+           this.output.push(val);
+        }
+        break;
+      case 'IfStatement':
+        const condition = this.visit(node.test);
+        if (condition) {
+           node.consequent.forEach(stmt => this.visit(stmt));
+        } else if (node.alternate) {
+           node.alternate.forEach(stmt => this.visit(stmt));
+        }
+        break;
+      case 'WhileStatement':
+        while (this.visit(node.test)) {
+           node.body.forEach(stmt => this.visit(stmt));
+        }
+        break;
+      case 'ForStatement':
+        if (node.init) this.visit(node.init);
+        while (!node.test || this.visit(node.test)) {
+           node.body.forEach(stmt => this.visit(stmt));
+           if (node.update) this.visit(node.update);
+        }
         break;
       case 'ReturnStatement':
-        return this.visit(node.argument);
+        const retVal = this.visit(node.argument);
+        const err = new Error('RETURN_VALUE');
+        err.value = retVal;
+        throw err;
       case 'AssignmentExpression':
         const assignVal = this.visit(node.right);
         if (node.left.type === 'Identifier') {
-          // If the variable doesn't exist yet, we still set it (or we could enforce declaration)
           this.environment[node.left.name] = assignVal;
           return assignVal;
         } else if (node.left.type === 'MemberExpression') {
-          // Mock setting a property
+          if (node.left.computed) {
+             const obj = this.visit(node.left.object);
+             const prop = this.visit(node.left.property);
+             if (Array.isArray(obj)) {
+                obj[prop] = assignVal;
+                return assignVal;
+             }
+          }
           return assignVal;
         }
         throw new Error("Objetivo de asignacion invalido");
       case 'BinaryExpression':
         return this.evaluateBinary(node);
+      case 'ArrayInstantiation':
+        return new Array(this.visit(node.size)).fill(0);
       case 'NewExpression':
         return { type: 'Instance', className: node.callee, properties: {} };
       case 'Literal':
@@ -67,14 +102,45 @@ export class Interpreter {
         return this.environment[node.name];
       case 'MemberExpression':
         const obj = this.visit(node.object);
+        if (node.computed) {
+           const prop = this.visit(node.property);
+           if (Array.isArray(obj)) {
+              return obj[prop];
+           }
+        }
         if (obj && obj.type === 'Instance') {
-           // Mocked property return
            return `<Miembro ${node.property} de ${obj.className}>`;
         }
         throw new Error(`No se puede acceder a la propiedad de un objeto nulo`);
       case 'CallExpression':
-        // We'll just return a mock string for function calls to avoid deep OOP state management in the basic interpreter
-        const callee = this.visit(node.callee);
+        if (node.callee.type === 'MemberExpression') {
+           const callerObj = this.visit(node.callee.object);
+           if (callerObj && callerObj.type === 'Instance') {
+              const classDecl = this.classes[callerObj.className];
+              if (classDecl) {
+                 const method = classDecl.body.find(m => m.type === 'MethodDeclaration' && m.name === node.callee.property);
+                 if (method) {
+                    const args = node.arguments.map(arg => this.visit(arg));
+                    const oldEnv = this.environment;
+                    this.environment = Object.assign({}, oldEnv);
+                    method.params.forEach((param, i) => {
+                       this.environment[param.name] = args[i];
+                    });
+                    try {
+                       method.body.forEach(stmt => this.visit(stmt));
+                    } catch (e) {
+                       if (e.message === 'RETURN_VALUE') {
+                          this.environment = oldEnv;
+                          return e.value;
+                       }
+                       throw e;
+                    }
+                    this.environment = oldEnv;
+                    return null;
+                 }
+              }
+           }
+        }
         return `[Llamada a metodo ejecutada]`;
       default:
         throw new Error(`Nodo AST desconocido: ${node.type}`);
