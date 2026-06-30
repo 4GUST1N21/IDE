@@ -213,8 +213,19 @@ export class Parser {
   }
 
   parseEquality() {
-    let expr = this.parseAddition();
+    let expr = this.parseRelational();
     while (this.match(TokenType.OPERATOR, '==') || this.match(TokenType.OPERATOR, '!=')) {
+      const operator = this.previous().lexeme;
+      const right = this.parseRelational();
+      expr = { type: 'BinaryExpression', operator, left: expr, right };
+    }
+    return expr;
+  }
+
+  parseRelational() {
+    let expr = this.parseAddition();
+    while (this.match(TokenType.OPERATOR, '<') || this.match(TokenType.OPERATOR, '>') ||
+           this.match(TokenType.OPERATOR, '<=') || this.match(TokenType.OPERATOR, '>=')) {
       const operator = this.previous().lexeme;
       const right = this.parseAddition();
       expr = { type: 'BinaryExpression', operator, left: expr, right };
